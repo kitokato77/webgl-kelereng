@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Marble with Surface Pattern</title>
+  <style>
+    body { margin: 0; background: #1a1a1a; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x1a1a1a);
+    document.body.appendChild(renderer.domElement);
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 1024;
+    canvas.height = 1024;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#000000';
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const spiralCount = 3;
+
+    for (let s = 0; s < spiralCount; s++) {
+      ctx.beginPath();
+      const startAngle = (s * 2 * Math.PI) / spiralCount;
+      
+      for (let angle = startAngle; angle < startAngle + Math.PI * 4; angle += 0.01) {
+        const radius = 50 + (angle - startAngle) * 40;
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        
+        if (angle === startAngle) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      
+      ctx.lineWidth = 60;
+      ctx.stroke();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+
+    const marbleGeometry = new THREE.SphereGeometry(1, 64, 64);
+    const marbleMaterial = new THREE.MeshStandardMaterial({
+      map: texture,
+      roughness: 0.3,
+      metalness: 0.1,
+    });
+    
+    const marble = new THREE.Mesh(marbleGeometry, marbleMaterial);
+    scene.add(marble);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const pointLight1 = new THREE.PointLight(0xffffff, 1);
+    pointLight1.position.set(5, 5, 5);
+    scene.add(pointLight1);
+
+    const pointLight2 = new THREE.PointLight(0xffffff, 0.7);
+    pointLight2.position.set(-5, -5, -5);
+    scene.add(pointLight2);
+
+    camera.position.z = 3;
+
+    let autoRotateX = 0;
+    let autoRotateY = 0.005;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      marble.rotation.y += autoRotateY;
+      marble.rotation.x += autoRotateX;
+      
+      renderer.render(scene, camera);
+    }
+
+    let isDragging = false;
+    let previousMousePosition = {
+      x: 0,
+      y: 0
+    };
+
+    document.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      previousMousePosition = {
+        x: e.clientX,
+        y: e.clientY
+      };
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        const deltaMove = {
+          x: e.clientX - previousMousePosition.x,
+          y: e.clientY - previousMousePosition.y
+        };
+
+        marble.rotation.y += deltaMove.x * 0.005;
+        marble.rotation.x += deltaMove.y * 0.005;
+
+        previousMousePosition = {
+          x: e.clientX,
+          y: e.clientY
+        };
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
